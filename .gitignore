@@ -11,3 +11,4 @@ dist/
 
 # Local notes with Azure passwords (never commit)
 *.local.env
+coverage/

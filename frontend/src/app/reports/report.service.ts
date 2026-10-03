@@ -46,13 +46,18 @@ export class ReportService {
   }
 }
 
-/** Downloads rows as a CSV file that opens in Excel (UTF-8 with BOM so ₹ and names survive). */
-export function downloadCsv(filename: string, header: string[], rows: (string | number | null)[][]): void {
+/** Rows as CSV text: fields with commas, quotes or line breaks are quoted and quotes doubled (RFC 4180). */
+export function toCsv(header: string[], rows: (string | number | null)[][]): string {
   const escape = (v: string | number | null) => {
     const s = v === null ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const csv = [header, ...rows].map(r => r.map(escape).join(',')).join('\r\n');
+  return [header, ...rows].map(r => r.map(escape).join(',')).join('\r\n');
+}
+
+/** Downloads rows as a CSV file that opens in Excel (UTF-8 with BOM so ₹ and names survive). */
+export function downloadCsv(filename: string, header: string[], rows: (string | number | null)[][]): void {
+  const csv = toCsv(header, rows);
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
