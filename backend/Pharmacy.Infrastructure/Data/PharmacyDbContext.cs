@@ -21,6 +21,7 @@ public class PharmacyDbContext : DbContext
     public DbSet<ScheduleRegisterEntry> ScheduleRegister => Set<ScheduleRegisterEntry>();
     public DbSet<PharmacySettings> PharmacySettings => Set<PharmacySettings>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
     public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
 
@@ -195,6 +196,15 @@ public class PharmacyDbContext : DbContext
             e.HasOne(r => r.SaleItem).WithMany().HasForeignKey(r => r.SaleItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<User>().WithMany().HasForeignKey(r => r.PharmacistId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => new { r.Schedule, r.CreatedAt });
+        });
+
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.Property(t => t.TokenHash).HasMaxLength(64).IsRequired();
+            e.HasIndex(t => t.TokenHash).IsUnique();
+            e.Property(t => t.RevokedReason).HasMaxLength(30);
+            e.HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(t => new { t.UserId, t.RevokedAt });
         });
 
         modelBuilder.Entity<Supplier>(e =>

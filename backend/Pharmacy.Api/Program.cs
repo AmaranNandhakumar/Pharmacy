@@ -105,6 +105,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<StockReceiver>();
 builder.Services.AddHealthChecks();
+builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddPharmacyRateLimits(builder.Configuration);
 
 // CORS for Angular dev server
 builder.Services.AddCors(options =>
@@ -185,6 +187,7 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 // When the Angular build is published into wwwroot (Azure App Service), the API serves the site itself:
 // one app, same origin, no CORS. In development and Docker (nginx serves it) there is no wwwroot/index.html.
@@ -202,6 +205,7 @@ app.UseRouting();
 app.UseCors("AllowAngularDev");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 app.MapHealthChecks("/api/health");
 

@@ -14,9 +14,35 @@ public class LoginDto
 
 public class AuthResponseDto
 {
+    /// <summary>Short-lived access token (minutes) sent as "Authorization: Bearer ...".</summary>
     public string Token { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
+
+    /// <summary>Single-use token for POST /api/auth/refresh; valid for days.</summary>
+    public string RefreshToken { get; set; } = string.Empty;
+    public DateTime RefreshExpiresAt { get; set; }
     public UserDto User { get; set; } = new();
+}
+
+public class RefreshRequestDto
+{
+    [Required, MaxLength(200)]
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
+public class ChangePasswordDto
+{
+    [Required]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required, MaxLength(128)]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class ResetPasswordDto
+{
+    [Required, MaxLength(128)]
+    public string NewPassword { get; set; } = string.Empty;
 }
 
 public class UserDto

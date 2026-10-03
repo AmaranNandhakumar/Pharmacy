@@ -19,12 +19,16 @@ public class PharmacyApiFactory : WebApplicationFactory<Program>
 
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
+    protected virtual int LoginPermitLimit => 100_000;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("Jwt:Key", "test-signing-key-that-is-at-least-32-characters-long");
         builder.UseSetting("SeedAdmin:Email", AdminEmail);
         builder.UseSetting("SeedAdmin:Password", AdminPassword);
+        // Tests log in a lot from one address; RateLimitTests uses a low limit on purpose
+        builder.UseSetting("RateLimiting:LoginPermitLimit", LoginPermitLimit.ToString());
 
         builder.ConfigureServices(services =>
         {

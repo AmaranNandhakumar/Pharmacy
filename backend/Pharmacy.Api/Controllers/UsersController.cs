@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Pharmacy.Api.DTOs;
 using Pharmacy.Api.Services;
 using Pharmacy.Core.Entities;
+using Pharmacy.Core.Rules;
 using Pharmacy.Infrastructure.Data;
 
 namespace Pharmacy.Api.Controllers;
@@ -15,11 +16,13 @@ public class UsersController : ControllerBase
 {
     private readonly PharmacyDbContext _db;
     private readonly IAuditService _audit;
+    private readonly RefreshTokenService _refresh;
 
-    public UsersController(PharmacyDbContext db, IAuditService audit)
+    public UsersController(PharmacyDbContext db, IAuditService audit, RefreshTokenService refresh)
     {
         _db = db;
         _audit = audit;
+        _refresh = refresh;
     }
 
     [HttpGet]
@@ -40,6 +43,8 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> Create(CreateUserDto dto)
     {
         var email = dto.Email.Trim().ToLowerInvariant();
+        var passwordError = PasswordRules.Validate(dto.Password, email);
+        if (passwordError is not null) return BadRequest(new { message = passwordError });
         if (await _db.Users.AnyAsync(u => u.Email == email))
             return Conflict(new { message = "A user with this email already exists." });
 
@@ -90,11 +95,31 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "The last active Admin can't be deactivated." });
 
         user.IsActive = dto.IsActive;
+        // A deactivated account must not keep refreshing its way back in
+        if (!dto.IsActive) await _refresh.RevokeAllAsync(user.Id, "Deactivated");
 
         _audit.Record(dto.IsActive ? "UserActivated" : "UserDeactivated", nameof(User), user.Id);
         await _db.SaveChangesAsync();
 
         return Ok(UserDto.From(user));
+    }
+
+    /// <summary>Admin sets a new password for a staff member who forgot theirs, and signs them out everywhere.</summary>
+    [HttpPost("{id:int}/reset-password")]
+    public async Task<IActionResult> ResetPassword(int id, ResetPasswordDto dto)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user is null) return NotFound();
+
+        var error = PasswordRules.Validate(dto.NewPassword, user.Email);
+        if (error is not null) return BadRequest(new { message = error });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        var sessions = await _refresh.RevokeAllAsync(user.Id, "PasswordReset");
+        _audit.Record("PasswordReset", nameof(User), user.Id, new { SessionsEnded = sessions });
+        await _db.SaveChangesAsync();
+
+        return NoContent();
     }
 
     private async Task<bool> IsLastActiveAdmin(User user) =>

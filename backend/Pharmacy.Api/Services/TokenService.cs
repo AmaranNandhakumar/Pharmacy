@@ -38,7 +38,7 @@ public class TokenService : ITokenService
         };
 
         // Short-lived on purpose: tokens grant access to health data
-        var expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"] ?? "60"));
+        var expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"] ?? "15"));
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
