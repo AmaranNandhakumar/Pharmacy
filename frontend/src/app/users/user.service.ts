@@ -29,6 +29,11 @@ export class UserService {
     return this.http.put<User>(`${this.apiUrl}/${id}`, { fullName, role });
   }
 
+  /** Admin sets a new password for a staff member; they are signed out everywhere. */
+  resetPassword(id: number, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/reset-password`, { newPassword });
+  }
+
   setActive(id: number, isActive: boolean): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}/active`, { isActive });
   }

@@ -14,5 +14,7 @@ export interface User {
 export interface AuthResponse {
   token: string;
   expiresAt: string;
+  refreshToken: string;
+  refreshExpiresAt: string;
   user: User;
 }

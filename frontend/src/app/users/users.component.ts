@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { passwordPolicy } from '../core/password-policy';
 import { USER_ROLES, User, UserRole } from '../core/models';
 import { UserService } from './user.service';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, FormsModule, DatePipe],
   template: `
     <h1>Staff</h1>
 
@@ -25,11 +26,12 @@ import { UserService } from './user.service';
       </div>
       @if (formError) { <p class="error">{{ formError }}</p> }
       <button class="btn" type="submit" [disabled]="form.invalid || saving">Add</button>
-      <span class="muted hint">Passwords need at least 8 characters.</span>
+      <span class="muted hint">Passwords need 8+ characters with a letter and a number.</span>
     </form>
 
     <div class="card">
       @if (listError) { <p class="error">{{ listError }}</p> }
+      @if (okMessage) { <p class="ok">{{ okMessage }}</p> }
       <table>
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th></th></tr></thead>
         <tbody>
@@ -44,8 +46,21 @@ import { UserService } from './user.service';
               </td>
               <td>{{ u.isActive ? 'Active' : 'Deactivated' }}</td>
               <td>{{ u.createdAt | date: 'mediumDate' }}</td>
-              <td><button class="btn-link" (click)="toggleActive(u)">{{ u.isActive ? 'Deactivate' : 'Reactivate' }}</button></td>
+              <td class="actions">
+                <button class="btn-link" (click)="startReset(u)">Reset password</button>
+                <button class="btn-link" (click)="toggleActive(u)">{{ u.isActive ? 'Deactivate' : 'Reactivate' }}</button>
+              </td>
             </tr>
+            @if (resetting?.id === u.id) {
+              <tr class="reset-row">
+                <td colspan="6">
+                  <input type="password" [(ngModel)]="newPassword" placeholder="New password for {{ u.fullName }}" autocomplete="new-password">
+                  <button class="btn" (click)="reset(u)" [disabled]="busy || !passwordOk()">Set password</button>
+                  <button class="btn-link" (click)="resetting = null">Cancel</button>
+                  <span class="muted small">8+ characters with a letter and a number. They will be signed out everywhere.</span>
+                </td>
+              </tr>
+            }
           } @empty {
             <tr><td colspan="6" class="muted">No staff yet.</td></tr>
           }
@@ -58,6 +73,12 @@ import { UserService } from './user.service';
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1rem; }
     .hint { margin-left: .75rem; font-size: .85rem; }
     tr.inactive td { color: var(--muted); }
+    .actions { display: flex; gap: 1rem; white-space: nowrap; }
+    .reset-row td { background: #f9fafb; }
+    .reset-row input { padding: .4rem .55rem; border: 1px solid var(--border); border-radius: 6px; margin-right: .75rem; min-width: 260px; }
+    .reset-row .btn { margin-right: .75rem; }
+    .small { font-size: .8rem; margin-left: .5rem; }
+    .ok { color: var(--brand); }
   `]
 })
 export class UsersComponent implements OnInit {
@@ -66,11 +87,15 @@ export class UsersComponent implements OnInit {
   saving = false;
   formError = '';
   listError = '';
+  okMessage = '';
+  resetting: User | null = null;
+  newPassword = '';
+  busy = false;
 
   form = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, passwordPolicy]],
     role: ['Technician' as UserRole, Validators.required]
   });
 
@@ -113,6 +138,25 @@ export class UsersComponent implements OnInit {
         this.listError = err.error?.message || 'Could not change role.';
         this.load();
       }
+    });
+  }
+
+  startReset(user: User): void {
+    this.resetting = user;
+    this.newPassword = '';
+    this.okMessage = '';
+  }
+
+  passwordOk(): boolean {
+    return passwordPolicy({ value: this.newPassword } as never) === null;
+  }
+
+  reset(user: User): void {
+    this.busy = true;
+    this.listError = '';
+    this.userService.resetPassword(user.id, this.newPassword).subscribe({
+      next: () => { this.busy = false; this.resetting = null; this.okMessage = `Password reset for ${user.fullName}.`; },
+      error: err => { this.busy = false; this.listError = err.error?.message || 'Could not reset the password.'; }
     });
   }
 

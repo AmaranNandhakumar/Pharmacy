@@ -22,7 +22,7 @@ interface NavItem {
         }
       </nav>
       <span class="user">
-        {{ auth.currentUser()?.fullName }} <span class="role">{{ auth.currentUser()?.role }}</span>
+        <a class="me" routerLink="/account" title="My account">{{ auth.currentUser()?.fullName }}</a> <span class="role">{{ auth.currentUser()?.role }}</span>
         <button class="btn-link" (click)="logout()">Log out</button>
       </span>
     </header>
@@ -36,6 +36,8 @@ interface NavItem {
     nav a { color: var(--text); text-decoration: none; padding: .25rem 0; white-space: nowrap; }
     nav a.active { color: var(--brand); border-bottom: 2px solid var(--brand); }
     .user { display: flex; align-items: center; gap: .6rem; font-size: .9rem; white-space: nowrap; }
+    .me { color: var(--text); text-decoration: none; }
+    .me:hover { color: var(--brand); text-decoration: underline; }
     .role { background: #ccfbf1; color: var(--brand-dark); border-radius: 999px; padding: .1rem .55rem; font-size: .75rem; }
     /* Use the screen width on desktops, with a comfortable gutter; cap it on very wide monitors */
     main { padding: 1.5rem clamp(1rem, 3vw, 2.5rem); max-width: 1600px; margin: 0 auto; }
