@@ -4,7 +4,21 @@ A pharmacy management web app for a retail pharmacy in India (inventory, prescri
 patients, GST billing), built as a self-directed learning project. Plan and design: [`docs/01-design-and-planning.md`](docs/01-design-and-planning.md) ·
 architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
 
-**Done so far**
+![CI](https://github.com/AmaranNandhakumar/Pharmacy/actions/workflows/ci.yml/badge.svg)
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+| Billing counter | GST tax invoice |
+|---|---|
+| ![Counter](docs/screenshots/counter.png) | ![Invoice](docs/screenshots/invoice.png) |
+| **Allergy warning before verifying** | **GST summary for filing** |
+| ![Prescription](docs/screenshots/prescription-allergy.png) | ![GST summary](docs/screenshots/reports-gst.png) |
+| **Purchase order and delivery** | **Audit log** |
+| ![Purchase order](docs/screenshots/purchase-order.png) | ![Audit log](docs/screenshots/audit-log.png) |
+
+Screenshots use the built-in [demo data](#demo-data); every name, licence and GSTIN in it is fake.
+
+**Features**
 - **M0, scaffold & auth:** staff log in with a role (Admin, Pharmacist, Technician); an Admin
   manages staff accounts. There is no public sign-up.
 - **M1, catalogue & inventory:** medicines with Indian drug schedule, HSN code and GST rate;
@@ -97,6 +111,30 @@ npm start
 ```
 
 Open `http://localhost:4200`.
+
+### Demo data
+
+To look around without typing in a catalogue, fill a **separate, empty** database with two weeks
+of fake pharmacy activity: 18 medicines (some low, expiring or expired), suppliers and purchase
+orders, patients, prescriptions in every state, about 70 GST invoices and the H1 register.
+
+```bash
+cd backend/Pharmacy.Api
+dotnet run -- "--ConnectionStrings:DefaultConnection=Server=localhost\SQLEXPRESS;Database=PharmacyDemoDb;Trusted_Connection=True;TrustServerCertificate=True;" "--SeedAdmin:Email=admin@demo.local" --seed-demo
+```
+
+It creates the database, adds the data and exits. It refuses to run against a database that
+already has medicines, and only runs in Development. Then start the API against the same database
+(same `--ConnectionStrings:DefaultConnection=...` argument, without `--seed-demo`) and sign in:
+
+| Account | Role |
+|---------|------|
+| `admin@demo.local` | Admin |
+| `pharmacist@demo.local` | Pharmacist |
+| `technician@demo.local` | Technician |
+
+The password for all three is `Demo@Pass123` (change it with `--Demo:Password=...` when seeding).
+These accounts exist only in the local demo database.
 
 ### Tests
 

@@ -6,6 +6,10 @@ using Microsoft.IdentityModel.Tokens;
 using Pharmacy.Api.Services;
 using Pharmacy.Infrastructure.Data;
 
+// Our own switch, taken out before configuration parses args (it would treat the next argument as its value)
+var seedDemo = args.Contains("--seed-demo");
+args = args.Where(a => a != "--seed-demo").ToArray();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // .NET only reads user-secrets in Development, so starting the API without the launch profile
@@ -112,6 +116,33 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// `dotnet run -- --seed-demo`: create/upgrade the database, fill it with fake demo data, then exit.
+// Development only, and only into a database with no medicines yet (point it at a separate database
+// with --ConnectionStrings:DefaultConnection="..." to keep your own data apart).
+if (seedDemo)
+{
+    if (!app.Environment.IsDevelopment())
+        throw new InvalidOperationException("--seed-demo only runs in Development.");
+
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<PharmacyDbContext>();
+    await db.Database.MigrateAsync();
+
+    var seeder = new DemoDataSeeder(db, DateTime.UtcNow);
+    if (!await seeder.CanSeedAsync())
+    {
+        Console.WriteLine("This database already has medicines; demo data only goes into an empty database. Nothing was changed.");
+        return;
+    }
+
+    var demoPassword = app.Configuration["Demo:Password"] ?? "Demo@Pass123";
+    var adminEmail = app.Configuration["SeedAdmin:Email"] ?? "admin@demo.local";
+    await seeder.SeedAsync(adminEmail, BCrypt.Net.BCrypt.HashPassword(demoPassword));
+    Console.WriteLine($"Demo data added. Sign in as {DemoDataSeeder.DemoPharmacistEmail} or {DemoDataSeeder.DemoTechnicianEmail} " +
+                      $"(password: the Demo:Password setting, default Demo@Pass123), or as {adminEmail}.");
+    return;
+}
 
 // First Admin comes from configuration (user secrets in dev), never from a public endpoint
 using (var scope = app.Services.CreateScope())
