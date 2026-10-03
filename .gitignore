@@ -8,3 +8,6 @@ dist/
 
 # Docker compose secrets
 .env
+
+# Local notes with Azure passwords (never commit)
+*.local.env

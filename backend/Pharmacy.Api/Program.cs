@@ -58,7 +58,8 @@ builder.Services.AddSwaggerGen(c =>
 
 // Database (migrations live in Pharmacy.Infrastructure, next to the DbContext)
 builder.Services.AddDbContext<PharmacyDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Retries ride out transient errors, e.g. the free Azure SQL database waking from auto-pause
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sql => sql.EnableRetryOnFailure()));
 
 // JWT Auth
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -184,11 +185,29 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// When the Angular build is published into wwwroot (Azure App Service), the API serves the site itself:
+// one app, same origin, no CORS. In development and Docker (nginx serves it) there is no wwwroot/index.html.
+var servesSpa = File.Exists(Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html"));
+if (servesSpa)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
+// Explicit, so routing runs after the static files: otherwise the SPA fallback endpoint is chosen first
+// and every .js request gets index.html
+app.UseRouting();
+
 app.UseCors("AllowAngularDev");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/api/health");
+
+// Angular routes (/sales/12, /reports) load index.html; unknown /api/... paths still return 404
+if (servesSpa)
+    app.MapFallbackToFile("{*path:regex(^(?!api/).*$)}", "index.html");
 
 app.Run();
 

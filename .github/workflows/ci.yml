@@ -66,3 +66,45 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: docker compose logs
+
+  deploy:
+    # Publishes main to the free Azure App Service demo once every check above has passed.
+    # The API serves the Angular build from wwwroot, so one app hosts both.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [backend, frontend, docker]
+    runs-on: ubuntu-latest
+    environment:
+      name: azure-demo
+      url: https://amaran-pharmacy.azurewebsites.net
+    concurrency: azure-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Publish API
+        run: dotnet publish backend/Pharmacy.Api/Pharmacy.Api.csproj -c Release -o publish
+      - name: Build web app into wwwroot
+        working-directory: frontend
+        run: |
+          npm ci
+          npx ng build --configuration production
+          mkdir -p ../publish/wwwroot
+          cp -r dist/pharmacy-frontend/browser/. ../publish/wwwroot/
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: amaran-pharmacy
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish
+      - name: Check the live site
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fs https://amaran-pharmacy.azurewebsites.net/api/health; then echo; exit 0; fi
+            sleep 10
+          done
+          exit 1

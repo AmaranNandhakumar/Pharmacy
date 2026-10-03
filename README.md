@@ -70,6 +70,23 @@ Pharmacy/
     └── users/                    # Staff management (Admin only)
 ```
 
+## Live demo
+
+**https://amaran-pharmacy.azurewebsites.net** — sign in as `pharmacist@demo.local` or
+`technician@demo.local` with password `Demo@Pass123`. All data is fake demo data.
+
+Hosted on Azure free tiers only, so it costs nothing to run:
+
+| Piece | Azure service | Note |
+|-------|---------------|------|
+| API + website | App Service **F1 (Free)**, Linux, Central India | Sleeps when idle; the first visit takes a few seconds |
+| Database | Azure SQL Database **free offer** (serverless) | Pauses itself if the monthly free amount runs out, so it never bills |
+| Budget | Monthly cost budget with email alerts | Warns on any spend at all |
+
+The API serves the Angular build from `wwwroot`, so one free app hosts both (same origin, no CORS).
+On start it applies migrations and, on an empty database, loads the demo data. Every push to `main`
+that passes CI is deployed automatically by the `deploy` job in `.github/workflows/ci.yml`.
+
 ## Run it with Docker (quickest)
 
 Needs only [Docker Desktop](https://www.docker.com/products/docker-desktop/) (free for personal use).
