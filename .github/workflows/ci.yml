@@ -31,3 +31,38 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npx ng build
+
+  docker:
+    # Builds both images and runs the whole stack (SQL Server + API + nginx) to check it starts and serves data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write a throwaway .env
+        run: |
+          cp .env.example .env
+          sed -i "s|^SA_PASSWORD=.*|SA_PASSWORD=Ci-Sql-$(openssl rand -hex 6)A1!|" .env
+          sed -i "s|^JWT_KEY=.*|JWT_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^ADMIN_PASSWORD=.*|ADMIN_PASSWORD=Ci-Admin-$(openssl rand -hex 6)A1!|" .env
+      - name: Build and start
+        run: docker compose up -d --build
+      - name: Wait for the API through nginx
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:8080/api/health; then echo; exit 0; fi
+            sleep 5
+          done
+          docker compose logs api
+          exit 1
+      - name: Log in and read the demo catalogue
+        run: |
+          set -a; . ./.env; set +a
+          TOKEN=$(curl -fs -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
+            http://localhost:8080/api/auth/login | jq -r .token)
+          COUNT=$(curl -fs -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/medicines | jq length)
+          echo "Medicines: $COUNT"
+          test "$COUNT" -gt 10
+          curl -fs http://localhost:8080/ | grep -q '<app-root>'
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs

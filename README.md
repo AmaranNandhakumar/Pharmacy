@@ -70,6 +70,29 @@ Pharmacy/
     └── users/                    # Staff management (Admin only)
 ```
 
+## Run it with Docker (quickest)
+
+Needs only [Docker Desktop](https://www.docker.com/products/docker-desktop/) (free for personal use).
+No .NET, Node or SQL Server install.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Edit the passwords in `.env` first (`.env` is git-ignored). On the first start the API creates the
+database, the Admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`, and, with `SEED_DEMO=true`, the
+[demo data](#demo-data). Then open http://localhost:8080.
+
+| Container | What it runs |
+|-----------|--------------|
+| `db` | SQL Server 2022 Express (data kept in the `db-data` volume) |
+| `api` | The ASP.NET Core API on port 8080 inside the network; applies migrations on start |
+| `web` | nginx serving the Angular build, forwarding `/api` to the API (so no CORS) |
+
+`docker compose down` stops it; `docker compose down -v` also deletes the database. CI builds the
+images and runs this same stack on every push, checking that the API answers and the demo data loads.
+
 ## Getting started
 
 Prerequisites are the same as TaskManager: .NET SDK 8+, Node LTS, SQL Server Express, `dotnet-ef`.

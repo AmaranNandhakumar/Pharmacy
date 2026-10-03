@@ -103,6 +103,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<StockReceiver>();
+builder.Services.AddHealthChecks();
 
 // CORS for Angular dev server
 builder.Services.AddCors(options =>
@@ -144,15 +145,32 @@ if (seedDemo)
     return;
 }
 
-// First Admin comes from configuration (user secrets in dev), never from a public endpoint
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PharmacyDbContext>();
+
+    // In Docker the database starts empty: apply migrations on start (with retries while SQL Server boots)
+    if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+        await MigrateWithRetryAsync(db, app.Logger);
+
+    // First Admin comes from configuration (user secrets in dev, env vars in Docker), never from a public endpoint
     var seedPassword = app.Configuration["SeedAdmin:Password"];
     await DbSeeder.SeedAdminAsync(db,
         app.Configuration["SeedAdmin:Email"],
         string.IsNullOrWhiteSpace(seedPassword) ? null : BCrypt.Net.BCrypt.HashPassword(seedPassword),
         addIfEmailMissing: app.Environment.IsDevelopment());
+
+    // Optional demo data for a throwaway environment (docker compose with SEED_DEMO=true); only into an empty catalogue
+    if (app.Configuration.GetValue<bool>("Demo:SeedOnStartup"))
+    {
+        var seeder = new DemoDataSeeder(db, DateTime.UtcNow);
+        if (await seeder.CanSeedAsync())
+        {
+            await seeder.SeedAsync(app.Configuration["SeedAdmin:Email"] ?? "admin@demo.local",
+                BCrypt.Net.BCrypt.HashPassword(app.Configuration["Demo:Password"] ?? "Demo@Pass123"));
+            app.Logger.LogInformation("Demo data added to an empty database.");
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -170,8 +188,26 @@ app.UseCors("AllowAngularDev");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/api/health");
 
 app.Run();
+
+static async Task MigrateWithRetryAsync(PharmacyDbContext db, ILogger logger)
+{
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            return;
+        }
+        catch (Exception ex) when (attempt < 12 && ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException)
+        {
+            logger.LogWarning("Database not ready yet (attempt {Attempt}): {Message}", attempt, ex.Message);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+    }
+}
 
 // Exposes the implicit Program class to WebApplicationFactory in the integration tests
 public partial class Program { }

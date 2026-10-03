@@ -77,6 +77,14 @@ public class AuthTests : IClassFixture<PharmacyApiFactory>
     }
 
     [Fact]
+    public async Task Health_IsAnonymous_ForContainerChecks()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Me_WithInvalidToken_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
