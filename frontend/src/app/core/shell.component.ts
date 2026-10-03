@@ -15,7 +15,7 @@ interface NavItem {
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="topbar no-print">
-      <span class="brand">Pharmacy</span>
+      <a class="brand" routerLink="/"><img src="amaran-mark-navy.svg" alt="" class="logo"> Pharmacy</a>
       <nav>
         @for (item of visibleNav(); track item.path) {
           <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }">{{ item.label }}</a>
@@ -30,13 +30,15 @@ interface NavItem {
   `,
   styles: [`
     .topbar { display: flex; align-items: center; gap: 1.5rem; padding: .75rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border); }
-    .brand { font-weight: 700; color: var(--brand); font-size: 1.1rem; }
+    .brand { display: flex; align-items: center; gap: .5rem; font-weight: 700; color: var(--brand); font-size: 1.1rem; text-decoration: none; }
+    .logo { height: 28px; width: auto; }
     nav { display: flex; gap: 1rem; flex: 1; }
     nav a { color: var(--text); text-decoration: none; padding: .25rem 0; }
     nav a.active { color: var(--brand); border-bottom: 2px solid var(--brand); }
     .user { display: flex; align-items: center; gap: .6rem; font-size: .9rem; }
     .role { background: #ccfbf1; color: var(--brand-dark); border-radius: 999px; padding: .1rem .55rem; font-size: .75rem; }
-    main { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
+    /* Use the screen width on desktops, with a comfortable gutter; cap it on very wide monitors */
+    main { padding: 1.5rem clamp(1rem, 3vw, 2.5rem); max-width: 1600px; margin: 0 auto; }
   `]
 })
 export class ShellComponent {

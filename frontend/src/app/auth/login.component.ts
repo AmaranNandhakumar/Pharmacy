@@ -10,6 +10,7 @@ import { AuthService } from '../core/auth.service';
   template: `
     <div class="wrap">
       <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+        <img src="amaran-mark-navy.svg" alt="" class="logo">
         <h1>Pharmacy</h1>
         <p class="muted">Sign in with your staff account.</p>
 
@@ -31,7 +32,9 @@ import { AuthService } from '../core/auth.service';
   styles: [`
     .wrap { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
     form { width: 100%; max-width: 360px; }
-    h1 { color: var(--brand); margin-bottom: .25rem; }
+    .logo { display: block; height: 56px; margin: 0 auto .75rem; }
+    h1 { color: var(--brand); margin-bottom: .25rem; text-align: center; }
+    form > .muted { text-align: center; }
     .btn { width: 100%; }
   `]
 })

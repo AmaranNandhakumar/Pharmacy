@@ -39,7 +39,6 @@ import { SaleService, localDate } from '../sales/sale.service';
         <span>Medicines at or below reorder level</span>
       </a>
     </div>
-    <p class="muted">Signed in as {{ auth.currentUser()?.role }}.</p>
   `,
   styles: [`
     .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem; }

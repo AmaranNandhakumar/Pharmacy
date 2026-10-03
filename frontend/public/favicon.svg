@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Amaran icon">
+<title>Amaran icon</title>
+<rect width="512" height="512" rx="96" fill="#1E2A44"/>
+<g transform="translate(80 122.5) scale(1.5)"><g fill="#F4EFE6" stroke="#F4EFE6" stroke-width="7" stroke-linejoin="round">
+    <polygon points="8,150 16,150 62,26 58,18"/>
+    <polygon points="56,18 72,18 112,150 94,150"/>
+    <polygon points="98,150 106,150 146,24 140,18"/>
+    <polygon points="136,18 154,18 154,150 136,150"/>
+    <rect x="0" y="147" width="28" height="5" rx="1"/>
+    <rect x="124" y="147" width="42" height="5" rx="1"/>
+    <path d="M150 18 C214 16 216 92 154 92 L154 82 C194 80 192 30 150 30 Z"/>
+  </g>
+  <path fill="#A86F3A" d="M158 88 C188 100 206 124 214 156 C204 142 188 128 170 120 C178 132 182 142 184 152 C172 136 162 116 158 88 Z"/>
+  <path fill="#C9975F" d="M176 108 C206 114 224 132 234 158 C220 146 204 138 186 132 Z"/>
+  <path fill="#E0B77E" d="M194 132 C214 136 228 146 240 162 C226 156 212 150 194 132 Z"/>
+  <path d="M14 112 C34 100 58 104 76 108 C88 111 98 106 104 98" fill="none" stroke="#B07A45" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="14" cy="112" r="5" fill="#B07A45"/></g>
+</svg>
