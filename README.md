@@ -2,7 +2,7 @@
 
 A pharmacy management web app for a retail pharmacy in India (inventory, prescriptions,
 patients, GST billing), built as a self-directed learning project. Plan and design: [`docs/01-design-and-planning.md`](docs/01-design-and-planning.md) ·
-architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
+architecture: [`docs/02-architecture.md`](docs/02-architecture.md) · key decisions and trade-offs: [`docs/03-decisions.md`](docs/03-decisions.md).
 
 ![CI](https://github.com/AmaranNandhakumar/Pharmacy/actions/workflows/ci.yml/badge.svg)
 
@@ -43,7 +43,7 @@ Screenshots use the built-in [demo data](#demo-data); every name, licence and GS
 | Backend  | ASP.NET Core 8 Web API, EF Core 8 |
 | Database | SQL Server |
 | Auth     | JWT bearer with role claims, BCrypt |
-| Tests    | xUnit + WebApplicationFactory + in-memory SQLite |
+| Tests    | xUnit + WebApplicationFactory + in-memory SQLite (API); Karma + Jasmine (Angular) |
 
 ## Structure
 
@@ -183,6 +183,14 @@ cd backend
 dotnet test
 ```
 
+Angular component tests run in headless Chrome (on Windows without Chrome, set `CHROME_BIN` to
+`msedge.exe`):
+
+```bash
+cd frontend
+npm run test:ci
+```
+
 If Windows Smart App Control blocks a freshly built DLL ("An Application Control policy has
 blocked this file"), or the running API locks the Debug output, build the tests in another
 configuration: `dotnet test Pharmacy.Tests/Pharmacy.Tests.csproj -c Release`.
@@ -193,6 +201,9 @@ configuration: `dotnet test Pharmacy.Tests/Pharmacy.Tests.csproj -c Release`.
 |--------|----------|-----|
 | POST | `/api/auth/login` | Anyone |
 | GET | `/api/auth/me` | Signed in |
+| POST | `/api/auth/refresh`, `/api/auth/logout` (refresh token in the body) | Anyone with a refresh token |
+| POST | `/api/auth/change-password`, `/api/auth/logout-all` | Signed in |
+| POST | `/api/users/{id}/reset-password` | Admin |
 | GET | `/api/users` | Admin |
 | GET | `/api/users/{id}` | Admin |
 | POST | `/api/users` | Admin |
@@ -280,6 +291,20 @@ table. The last active Admin can't be demoted or deactivated.
 - Invoices print the pharmacy's name, GSTIN and drug licence numbers from **Settings**. They start
   as obvious placeholders; an Admin fills in the real ones.
 - Prescriptions dispensed before M3 have no fill record, so they can't be billed at the counter.
+
+### Security
+
+- Access tokens last 15 minutes; the app renews them silently with a single-use refresh token
+  (7 days, stored hashed, rotated on every use). Replaying an old refresh token signs that user out everywhere.
+- **My account** (click your name): change your password, or sign out on all devices.
+  **Staff → Reset password** lets an Admin set a new password for someone who forgot theirs.
+  Both end the user's other sessions and are audited.
+- Passwords: 8+ characters with a letter and a number, and not built from the email name.
+- Login, refresh and password change are limited to 10 attempts a minute per address (HTTP 429).
+- Security headers on every response: a strict Content-Security-Policy, `X-Frame-Options: DENY`,
+  `nosniff`, `no-referrer`, and `Cache-Control: no-store` on the API.
+
+The reasoning and trade-offs are in [`docs/03-decisions.md`](docs/03-decisions.md).
 
 ### Report rules
 
