@@ -50,6 +50,7 @@ export class ShellComponent {
     { label: 'Patients', path: '/patients', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Medicines', path: '/medicines', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Stock alerts', path: '/stock-alerts', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Purchasing', path: '/purchase-orders', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Reports', path: '/reports', roles: ['Admin', 'Pharmacist'] },
     { label: 'H1 register', path: '/register', roles: ['Admin', 'Pharmacist'] },
     { label: 'Audit log', path: '/audit', roles: ['Admin'] },

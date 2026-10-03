@@ -66,6 +66,29 @@ export const routes: Routes = [
         canActivate: [roleGuard('Admin', 'Pharmacist')]
       },
       {
+        path: 'suppliers',
+        loadComponent: () => import('./purchasing/suppliers.component').then(m => m.SuppliersComponent),
+        canActivate: [roleGuard('Admin', 'Pharmacist')]
+      },
+      {
+        path: 'purchase-orders',
+        loadComponent: () => import('./purchasing/purchase-order-list.component').then(m => m.PurchaseOrderListComponent)
+      },
+      {
+        path: 'purchase-orders/new',
+        loadComponent: () => import('./purchasing/purchase-order-form.component').then(m => m.PurchaseOrderFormComponent),
+        canActivate: [roleGuard('Admin', 'Pharmacist')]
+      },
+      {
+        path: 'purchase-orders/:id/edit',
+        loadComponent: () => import('./purchasing/purchase-order-form.component').then(m => m.PurchaseOrderFormComponent),
+        canActivate: [roleGuard('Admin', 'Pharmacist')]
+      },
+      {
+        path: 'purchase-orders/:id',
+        loadComponent: () => import('./purchasing/purchase-order-detail.component').then(m => m.PurchaseOrderDetailComponent)
+      },
+      {
         path: 'reports',
         loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent),
         canActivate: [roleGuard('Admin', 'Pharmacist')]

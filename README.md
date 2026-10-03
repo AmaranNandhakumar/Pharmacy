@@ -19,6 +19,9 @@ architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
 - **M4, reports & audit:** daily sales by payment method, GST summary by rate and HSN (for
   GSTR-3B / GSTR-1), stock valuation at cost and selling price, expiring stock with money at risk,
   CSV download for each, and an Admin audit log viewer.
+- **M5, purchasing:** suppliers (GSTIN, wholesale drug licence), purchase orders drafted from the
+  low-stock list with suggested quantities, a printable PO, and deliveries received against it
+  (partial deliveries, several batches per line, close short or cancel).
 
 | Layer    | Technology |
 |----------|------------|
@@ -49,6 +52,7 @@ Pharmacy/
     ├── prescriptions/            # Enter, verify/reject, dispense and refill
     ├── sales/                    # Counter (POS), invoice, sales list, H1 register, settings
     ├── reports/                  # Reports (CSV export) and audit log
+    ├── purchasing/               # Suppliers, purchase orders, receive deliveries
     └── users/                    # Staff management (Admin only)
 ```
 
@@ -146,6 +150,13 @@ configuration: `dotnet test Pharmacy.Tests/Pharmacy.Tests.csproj -c Release`.
 | GET | `/api/reports/stock-valuation` | Admin, Pharmacist |
 | GET | `/api/reports/expiring?withinDays=90` | Admin, Pharmacist |
 | GET | `/api/audit?entityType=&entityId=&action=&userId=&from=&to=&page=&pageSize=` | Admin |
+| GET | `/api/suppliers?search=&includeInactive=`, `/api/suppliers/{id}` | Signed in |
+| POST / PUT / DELETE | `/api/suppliers`, `/api/suppliers/{id}` (delete = deactivate) | Admin, Pharmacist |
+| GET | `/api/purchase-orders?status=&supplierId=`, `/api/purchase-orders/{id}` | Signed in |
+| GET | `/api/purchase-orders/suggestions` (low stock, suggested quantity) | Admin, Pharmacist |
+| POST / PUT | `/api/purchase-orders`, `/api/purchase-orders/{id}` (draft only) | Admin, Pharmacist |
+| POST | `/api/purchase-orders/{id}/order`, `/api/purchase-orders/{id}/close` | Admin, Pharmacist |
+| POST | `/api/purchase-orders/{id}/receive` (a delivery) | Signed in |
 
 User changes, medicine changes, stock receipts and adjustments are written to the `AuditLogs`
 table. The last active Admin can't be demoted or deactivated.
@@ -204,6 +215,21 @@ table. The last active Admin can't be demoted or deactivated.
 - Ranges are capped at 366 days. Reports are for Admins and Pharmacists; the audit log is Admin only
   and read-only.
 
-## Next: M5, purchasing (stretch)
+### Purchasing rules
 
-Suppliers, purchase orders raised from low stock, and receiving stock against a purchase order.
+- Draft → Ordered → Part received → Received. A draft can be edited; once ordered, its lines are fixed.
+  **Close short** stops waiting for what hasn't come (or **cancels** if nothing came).
+- Suggested quantity for a low-stock medicine: enough to reach twice its reorder level, less what is
+  already on an open order (never less than the reorder level). Medicines already covered by an
+  ordered PO drop off the list. The last supplier and purchase rate come from its latest batch.
+- A delivery needs the supplier's invoice number. Each line becomes stock in a batch, with the same
+  rules as any receipt (MRP, selling price ≤ MRP, not expired, same batch must match expiry and MRP).
+  One line can arrive in several batches. Receiving more than was ordered is refused, and the whole
+  delivery saves together or not at all.
+- Any staff member can receive a delivery; only Admins and Pharmacists raise, change or close orders.
+- A supplier with open orders can't be deactivated.
+
+## All planned milestones (M0–M5) are done
+
+Ideas for later: refresh tokens, supplier returns of near-expiry stock, drug-interaction checks,
+a patient portal, and deployment (Docker / Azure).

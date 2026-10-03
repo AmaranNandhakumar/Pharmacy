@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { StockAlerts } from '../medicines/medicine.models';
 import { MedicineService } from '../medicines/medicine.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-stock-alerts',
@@ -49,7 +50,9 @@ import { MedicineService } from '../medicines/medicine.service';
       </section>
 
       <section class="card">
-        <h2>Low stock <span class="count warn">{{ a.lowStock.length }}</span></h2>
+        <h2>Low stock <span class="count warn">{{ a.lowStock.length }}</span>
+          @if (canBuy && a.lowStock.length) { <a class="btn-link order" routerLink="/purchase-orders/new">Create purchase order</a> }
+        </h2>
         <table>
           <thead><tr><th>Medicine</th><th>Sellable</th><th>Reorder level</th></tr></thead>
           <tbody>
@@ -63,6 +66,7 @@ import { MedicineService } from '../medicines/medicine.service';
     }
   `,
   styles: [`
+    .order { font-size: .9rem; font-weight: 400; margin-left: 1rem; text-decoration: none; }
     .head { display: flex; justify-content: space-between; align-items: center; }
     .head select { margin-left: .4rem; padding: .3rem; }
     section { margin-bottom: 1.25rem; }
@@ -80,7 +84,9 @@ export class StockAlertsComponent implements OnInit {
   dayOptions = [30, 60, 90, 180];
   error = '';
 
-  constructor(private service: MedicineService) {}
+  canBuy = this.auth.hasRole('Admin', 'Pharmacist');
+
+  constructor(private service: MedicineService, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.load();
