@@ -13,6 +13,9 @@ architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
 - **M2, patients & prescriptions:** patients with allergies and recorded consent; prescriptions
   entered by any staff member, verified by a pharmacist (with an allergy warning to acknowledge),
   then dispensed from the earliest-expiring batches first (FEFO), with refills tracked.
+- **M3, point of sale:** a billing counter for shelf (OTC / Schedule G) items and dispensed
+  prescriptions on one GST invoice (CGST + SGST, batch, expiry and MRP per line), cash/UPI/card,
+  printable A5 invoice, sales history, Admin-only voids, and the Schedule H1 / X register.
 
 | Layer    | Technology |
 |----------|------------|
@@ -41,6 +44,7 @@ Pharmacy/
     ├── inventory/                # Stock alerts page
     ├── patients/                 # Patient search, add/edit, prescription history
     ├── prescriptions/            # Enter, verify/reject, dispense and refill
+    ├── sales/                    # Counter (POS), invoice, sales list, H1 register, settings
     └── users/                    # Staff management (Admin only)
 ```
 
@@ -93,6 +97,10 @@ cd backend
 dotnet test
 ```
 
+If Windows Smart App Control blocks a freshly built DLL ("An Application Control policy has
+blocked this file"), or the running API locks the Debug output, build the tests in another
+configuration: `dotnet test Pharmacy.Tests/Pharmacy.Tests.csproj -c Release`.
+
 ## API
 
 | Method | Endpoint | Who |
@@ -122,6 +130,13 @@ dotnet test
 | POST | `/api/prescriptions/{id}/verify` | Pharmacist |
 | POST | `/api/prescriptions/{id}/reject` | Pharmacist |
 | POST | `/api/prescriptions/{id}/dispense` (first fill or refill) | Pharmacist |
+| POST | `/api/sales` (shelf items + prescription fills) | Signed in |
+| GET | `/api/sales?from=&to=` (local dates, default today) | Signed in |
+| GET | `/api/sales/{id}` (full invoice) | Signed in |
+| POST | `/api/sales/{id}/void` | Admin |
+| GET | `/api/sales/billable-fills?patientId=` | Signed in |
+| GET | `/api/sales/register?schedule=H1&from=&to=` | Admin, Pharmacist |
+| GET / PUT | `/api/settings` (invoice header: GSTIN, drug licences) | read: all · edit: Admin |
 
 User changes, medicine changes, stock receipts and adjustments are written to the `AuditLogs`
 table. The last active Admin can't be demoted or deactivated.
@@ -150,7 +165,24 @@ table. The last active Admin can't be demoted or deactivated.
 - Dispensing takes stock from the earliest-expiring unexpired batches first (FEFO) and saves all
   items together or none of them.
 
-## Next: M3, point of sale
+### Billing rules (India)
 
-Cart with OTC and dispensed items, GST invoice (CGST + SGST) with batch, expiry and MRP per line,
-cash/card/UPI payment, and the Schedule H1 register filled in from each sale.
+- Only OTC and Schedule G medicines are sold straight off the shelf. Schedule H / H1 / X are
+  billed only from a **dispensed prescription fill**, so their stock leaves the shelf once (at
+  dispense) and the bill shows exactly the batches handed over. A fill can be billed only once.
+- Prices are GST-inclusive. Per line: taxable value = total × 100 / (100 + GST rate); the GST is
+  split equally into CGST and SGST (intra-state sale). The invoice also totals tax per GST rate.
+- Discount is a percentage of the bill, up to 20%, applied before tax is worked out.
+- Invoice numbers run per financial year (April to March): `2026-27/000001`, `2026-27/000002`, ...
+  Voided invoices keep their number.
+- Every Schedule H1 / X line is copied into the register (patient, prescriber with registration
+  number, drug, batch, quantity, pharmacist) at the time of sale, so later edits don't change it.
+- Only an Admin can void a sale. Voiding needs a reason and puts the stock back on the shelf;
+  a voided prescription bill doesn't give the patient their refill back.
+- Invoices print the pharmacy's name, GSTIN and drug licence numbers from **Settings**. They start
+  as obvious placeholders; an Admin fills in the real ones.
+- Prescriptions dispensed before M3 have no fill record, so they can't be billed at the counter.
+
+## Next: M4, reports & audit
+
+Daily sales, GST summary (for GSTR-1 / GSTR-3B), stock valuation, expiring stock, and an audit log viewer.

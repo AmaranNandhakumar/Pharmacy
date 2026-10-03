@@ -49,6 +49,28 @@ export const routes: Routes = [
         loadComponent: () => import('./prescriptions/prescription-detail.component').then(m => m.PrescriptionDetailComponent)
       },
       {
+        path: 'pos',
+        loadComponent: () => import('./sales/pos.component').then(m => m.PosComponent)
+      },
+      {
+        path: 'sales',
+        loadComponent: () => import('./sales/sales-list.component').then(m => m.SalesListComponent)
+      },
+      {
+        path: 'sales/:id',
+        loadComponent: () => import('./sales/invoice.component').then(m => m.InvoiceComponent)
+      },
+      {
+        path: 'register',
+        loadComponent: () => import('./sales/register.component').then(m => m.RegisterComponent),
+        canActivate: [roleGuard('Admin', 'Pharmacist')]
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./sales/settings.component').then(m => m.SettingsComponent),
+        canActivate: [roleGuard('Admin')]
+      },
+      {
         path: 'users',
         loadComponent: () => import('./users/users.component').then(m => m.UsersComponent),
         canActivate: [roleGuard('Admin')]

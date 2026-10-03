@@ -76,6 +76,7 @@ export interface DispensedLine {
 }
 
 export interface DispenseResult {
+  fillId: number;
   prescription: Prescription;
   wasRefill: boolean;
   lines: DispensedLine[];

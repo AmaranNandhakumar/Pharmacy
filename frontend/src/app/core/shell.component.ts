@@ -14,7 +14,7 @@ interface NavItem {
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <header class="topbar">
+    <header class="topbar no-print">
       <span class="brand">Pharmacy</span>
       <nav>
         @for (item of visibleNav(); track item.path) {
@@ -40,14 +40,18 @@ interface NavItem {
   `]
 })
 export class ShellComponent {
-  // Later milestones add Sales and Reports here
+  // Reports arrive in M4
   private nav: NavItem[] = [
     { label: 'Dashboard', path: '/', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Counter', path: '/pos', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Sales', path: '/sales', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Prescriptions', path: '/prescriptions', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Patients', path: '/patients', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Medicines', path: '/medicines', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Stock alerts', path: '/stock-alerts', roles: ['Admin', 'Pharmacist', 'Technician'] },
-    { label: 'Staff', path: '/users', roles: ['Admin'] }
+    { label: 'H1 register', path: '/register', roles: ['Admin', 'Pharmacist'] },
+    { label: 'Staff', path: '/users', roles: ['Admin'] },
+    { label: 'Settings', path: '/settings', roles: ['Admin'] }
   ];
 
   constructor(public auth: AuthService, private router: Router) {}

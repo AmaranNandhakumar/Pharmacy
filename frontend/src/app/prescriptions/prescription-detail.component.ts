@@ -97,7 +97,10 @@ import { StatusBadgeComponent } from './status-badge.component';
 
       @if (result) {
         <div class="card">
-          <h2>{{ result.wasRefill ? 'Refill handed over' : 'Handed over' }}</h2>
+          <div class="title">
+            <h2>{{ result.wasRefill ? 'Refill handed over' : 'Handed over' }}</h2>
+            <a class="btn" [routerLink]="['/pos']" [queryParams]="{ fillId: result.fillId }">Bill at the counter</a>
+          </div>
           <p class="muted">Picked from the earliest-expiring batches first.</p>
           <table>
             <thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>MRP</th><th>Qty</th></tr></thead>
@@ -123,7 +126,9 @@ import { StatusBadgeComponent } from './status-badge.component';
     .back { display: inline-block; margin-bottom: 1rem; color: var(--brand); text-decoration: none; }
     .card { margin-bottom: 1.25rem; }
     h1 { margin-bottom: .25rem; display: flex; gap: .75rem; align-items: center; }
-    .title a, p a { color: var(--brand); }
+    .title { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .title a:not(.btn), p a { color: var(--brand); }
+    a.btn { text-decoration: none; }
     .facts { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: .75rem; font-size: .9rem; align-items: center; }
     .warning { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
     .warning ul { margin: .5rem 0 0; }
