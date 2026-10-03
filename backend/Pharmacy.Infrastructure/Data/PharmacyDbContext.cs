@@ -12,6 +12,9 @@ public class PharmacyDbContext : DbContext
     public DbSet<Medicine> Medicines => Set<Medicine>();
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +74,40 @@ public class PharmacyDbContext : DbContext
             e.Property(m => m.ReferenceId).HasMaxLength(50);
             e.HasOne(m => m.Batch).WithMany(b => b.Movements).HasForeignKey(m => m.BatchId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(m => m.CreatedAt);
+        });
+
+        modelBuilder.Entity<Patient>(e =>
+        {
+            e.Property(p => p.FullName).HasMaxLength(100).IsRequired();
+            e.Property(p => p.Phone).HasMaxLength(20);
+            e.Property(p => p.Address).HasMaxLength(300);
+            e.Property(p => p.Allergies).HasMaxLength(500);
+            e.Property(p => p.Notes).HasMaxLength(1000);
+            e.HasIndex(p => p.FullName);
+            e.HasIndex(p => p.Phone);
+        });
+
+        modelBuilder.Entity<Prescription>(e =>
+        {
+            e.Property(p => p.PrescriberName).HasMaxLength(100).IsRequired();
+            e.Property(p => p.PrescriberRegNo).HasMaxLength(50).IsRequired();
+            e.Property(p => p.PrescriberAddress).HasMaxLength(300);
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.RejectReason).HasMaxLength(500);
+            e.HasOne(p => p.Patient).WithMany(p => p.Prescriptions).HasForeignKey(p => p.PatientId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(p => p.EnteredById).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(p => p.VerifiedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(p => p.DispensedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(p => p.Status);
+        });
+
+        modelBuilder.Entity<PrescriptionItem>(e =>
+        {
+            e.Property(i => i.Dose).HasMaxLength(100).IsRequired();
+            e.Property(i => i.Directions).HasMaxLength(300).IsRequired();
+            e.Ignore(i => i.HasRefillsLeft);
+            e.HasOne(i => i.Prescription).WithMany(p => p.Items).HasForeignKey(i => i.PrescriptionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(i => i.Medicine).WithMany().HasForeignKey(i => i.MedicineId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

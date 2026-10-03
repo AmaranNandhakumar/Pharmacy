@@ -90,4 +90,48 @@ public static class ApiClient
             supplierName = "Test Distributor",
             supplierInvoiceNo = "INV-001"
         }, Json);
+
+    /// <summary>Creates a fake patient (never real data) and returns it.</summary>
+    public static async Task<PatientDetailDto> CreatePatientAsync(HttpClient client, string? allergies = null, string? name = null)
+    {
+        var response = await client.PostAsJsonAsync("/api/patients", new
+        {
+            fullName = name ?? UniqueName("Patient"),
+            dateOfBirth = new DateOnly(1985, 6, 15),
+            phone = "9876543210",
+            address = "12 Test Street, Chennai",
+            allergies,
+            consentGiven = true
+        }, Json);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PatientDetailDto>(Json))!;
+    }
+
+    public static Task<HttpResponseMessage> PostPrescriptionAsync(HttpClient client, int patientId, bool copyRetained = false,
+        params (int medicineId, int quantity, int refills)[] items) =>
+        client.PostAsJsonAsync("/api/prescriptions", new
+        {
+            patientId,
+            prescriberName = "Dr. Test Doctor",
+            prescriberRegNo = "TN-12345",
+            prescriberAddress = "City Clinic, Chennai",
+            issuedOn = DateOnly.FromDateTime(DateTime.Today),
+            copyRetained,
+            items = items.Select(i => new
+            {
+                medicineId = i.medicineId,
+                dose = "1 tablet",
+                quantity = i.quantity,
+                directions = "Twice a day after food",
+                refillsAllowed = i.refills
+            })
+        }, Json);
+
+    public static async Task<PrescriptionDto> CreatePrescriptionAsync(HttpClient client, int patientId,
+        params (int medicineId, int quantity, int refills)[] items)
+    {
+        var response = await PostPrescriptionAsync(client, patientId, false, items);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PrescriptionDto>(Json))!;
+    }
 }
