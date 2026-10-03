@@ -15,6 +15,11 @@ public class PharmacyDbContext : DbContext
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
+    public DbSet<PrescriptionFill> PrescriptionFills => Set<PrescriptionFill>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleItem> SaleItems => Set<SaleItem>();
+    public DbSet<ScheduleRegisterEntry> ScheduleRegister => Set<ScheduleRegisterEntry>();
+    public DbSet<PharmacySettings> PharmacySettings => Set<PharmacySettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +113,97 @@ public class PharmacyDbContext : DbContext
             e.Ignore(i => i.HasRefillsLeft);
             e.HasOne(i => i.Prescription).WithMany(p => p.Items).HasForeignKey(i => i.PrescriptionId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(i => i.Medicine).WithMany().HasForeignKey(i => i.MedicineId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PrescriptionFill>(e =>
+        {
+            e.HasOne(f => f.Prescription).WithMany(p => p.Fills).HasForeignKey(f => f.PrescriptionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(f => f.DispensedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(f => f.Sale).WithMany().HasForeignKey(f => f.SaleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(f => f.SaleId);
+        });
+
+        modelBuilder.Entity<PrescriptionFillLine>(e =>
+        {
+            e.HasOne(l => l.Fill).WithMany(f => f.Lines).HasForeignKey(l => l.PrescriptionFillId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(l => l.PrescriptionItem).WithMany().HasForeignKey(l => l.PrescriptionItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(l => l.Batch).WithMany().HasForeignKey(l => l.BatchId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Sale>(e =>
+        {
+            e.Property(s => s.InvoiceNo).HasMaxLength(20).IsRequired();
+            e.HasIndex(s => s.InvoiceNo).IsUnique();
+            e.Property(s => s.CustomerName).HasMaxLength(100);
+            e.Property(s => s.PaymentMethod).HasConversion<string>().HasMaxLength(10);
+            e.Property(s => s.Status).HasConversion<string>().HasMaxLength(10);
+            e.Property(s => s.VoidReason).HasMaxLength(500);
+            e.Property(s => s.DiscountPercent).HasPrecision(5, 2);
+            foreach (var money in new[] { nameof(Sale.GrossAmount), nameof(Sale.Discount), nameof(Sale.TaxableValue), nameof(Sale.Cgst), nameof(Sale.Sgst), nameof(Sale.Total) })
+                e.Property(money).HasPrecision(18, 2);
+            e.HasOne(s => s.Patient).WithMany().HasForeignKey(s => s.PatientId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(s => s.VoidedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(s => s.CreatedAt);
+        });
+
+        modelBuilder.Entity<SaleItem>(e =>
+        {
+            e.Property(i => i.MedicineName).HasMaxLength(200).IsRequired();
+            e.Property(i => i.BatchNumber).HasMaxLength(50).IsRequired();
+            e.Property(i => i.HsnCode).HasMaxLength(8).IsRequired();
+            e.Property(i => i.GstRatePercent).HasPrecision(5, 2);
+            foreach (var money in new[] { nameof(SaleItem.Mrp), nameof(SaleItem.UnitPrice), nameof(SaleItem.GrossAmount), nameof(SaleItem.Discount),
+                         nameof(SaleItem.TaxableValue), nameof(SaleItem.Cgst), nameof(SaleItem.Sgst), nameof(SaleItem.LineTotal) })
+                e.Property(money).HasPrecision(18, 2);
+            e.HasOne(i => i.Sale).WithMany(s => s.Items).HasForeignKey(i => i.SaleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(i => i.Medicine).WithMany().HasForeignKey(i => i.MedicineId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.Batch).WithMany().HasForeignKey(i => i.BatchId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<PrescriptionItem>().WithMany().HasForeignKey(i => i.PrescriptionItemId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ScheduleRegisterEntry>(e =>
+        {
+            e.Property(r => r.Schedule).HasConversion<string>().HasMaxLength(10);
+            e.Property(r => r.InvoiceNo).HasMaxLength(20).IsRequired();
+            e.Property(r => r.PatientName).HasMaxLength(100).IsRequired();
+            e.Property(r => r.PatientAddress).HasMaxLength(300);
+            e.Property(r => r.PrescriberName).HasMaxLength(100).IsRequired();
+            e.Property(r => r.PrescriberRegNo).HasMaxLength(50).IsRequired();
+            e.Property(r => r.PrescriberAddress).HasMaxLength(300);
+            e.Property(r => r.DrugName).HasMaxLength(200).IsRequired();
+            e.Property(r => r.BatchNumber).HasMaxLength(50).IsRequired();
+            e.HasOne(r => r.SaleItem).WithMany().HasForeignKey(r => r.SaleItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(r => r.PharmacistId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(r => new { r.Schedule, r.CreatedAt });
+        });
+
+        modelBuilder.Entity<PharmacySettings>(e =>
+        {
+            e.Property(s => s.Id).ValueGeneratedNever();
+            e.Property(s => s.Name).HasMaxLength(200).IsRequired();
+            e.Property(s => s.Address).HasMaxLength(300).IsRequired();
+            e.Property(s => s.Phone).HasMaxLength(20);
+            e.Property(s => s.StateCode).HasMaxLength(2).IsRequired();
+            e.Property(s => s.Gstin).HasMaxLength(15).IsRequired();
+            e.Property(s => s.DrugLicence20).HasMaxLength(50).IsRequired();
+            e.Property(s => s.DrugLicence21).HasMaxLength(50).IsRequired();
+            e.Property(s => s.RegisteredPharmacistName).HasMaxLength(100).IsRequired();
+            e.Property(s => s.RegisteredPharmacistRegNo).HasMaxLength(50).IsRequired();
+
+            // Placeholder details (clearly fake) until an Admin fills in the real ones on the Settings page
+            e.HasData(new PharmacySettings
+            {
+                Id = Pharmacy.Core.Entities.PharmacySettings.SingletonId,
+                Name = "Your Pharmacy Name",
+                Address = "Shop address, City, State, PIN",
+                StateCode = "33",
+                Gstin = "33AAAAA0000A1Z5",
+                DrugLicence20 = "DL-20-XXXX",
+                DrugLicence21 = "DL-21-XXXX",
+                RegisteredPharmacistName = "Registered Pharmacist",
+                RegisteredPharmacistRegNo = "REG-XXXX"
+            });
         });
     }
 }

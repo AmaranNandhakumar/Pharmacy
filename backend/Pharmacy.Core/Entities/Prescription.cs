@@ -29,4 +29,5 @@ public class Prescription
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<PrescriptionItem> Items { get; set; } = new List<PrescriptionItem>();
+    public ICollection<PrescriptionFill> Fills { get; set; } = new List<PrescriptionFill>();
 }

@@ -174,6 +174,7 @@ public class PrescriptionsController : ControllerBase
         var userId = User.GetUserId();
         var wasRefill = rx.Status == PrescriptionStatus.Dispensed;
         var lines = new List<DispensedLineDto>();
+        var fill = new PrescriptionFill { Prescription = rx, IsRefill = wasRefill, DispensedById = userId, DispensedAt = UtcNow };
 
         try
         {
@@ -188,6 +189,7 @@ public class PrescriptionsController : ControllerBase
                 foreach (var (batch, quantity) in picks)
                 {
                     StockRules.Apply(batch, -quantity, StockMovementType.Dispense, userId, referenceId: $"RX-{rx.Id}");
+                    fill.Lines.Add(new PrescriptionFillLine { PrescriptionItem = item, Batch = batch, Quantity = quantity });
                     lines.Add(new DispensedLineDto
                     {
                         PrescriptionItemId = item.Id,
@@ -202,6 +204,8 @@ public class PrescriptionsController : ControllerBase
             }
 
             PrescriptionRules.RecordFill(rx, items, userId, UtcNow);
+            // Billed later at the counter (POST /api/sales with this fill's id)
+            _db.PrescriptionFills.Add(fill);
         }
         catch (Exception ex) when (ex is PrescriptionRuleException or StockRuleException)
         {
@@ -220,7 +224,7 @@ public class PrescriptionsController : ControllerBase
             return Conflict(new { message = "Stock changed while dispensing. Nothing was saved; try again." });
         }
 
-        return Ok(new DispenseResultDto { Prescription = await ToDto(rx), WasRefill = wasRefill, Lines = lines });
+        return Ok(new DispenseResultDto { FillId = fill.Id, Prescription = await ToDto(rx), WasRefill = wasRefill, Lines = lines });
     }
 
     private Task<Prescription?> Load(int id, bool tracking)

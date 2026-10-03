@@ -131,6 +131,8 @@ public class DispensedLineDto
 
 public class DispenseResultDto
 {
+    /// <summary>Bill this at the counter: POST /api/sales with it in <c>prescriptionFillIds</c>.</summary>
+    public int FillId { get; set; }
     public PrescriptionDto Prescription { get; set; } = new();
     public bool WasRefill { get; set; }
     public List<DispensedLineDto> Lines { get; set; } = new();
