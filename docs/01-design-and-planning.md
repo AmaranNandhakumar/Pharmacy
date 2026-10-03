@@ -35,7 +35,7 @@ Goals in priority order:
 ### 3.1 Medicine catalogue
 - Product record: name, generic name, strength, form (tablet, syrup, ...), pack size, manufacturer, barcode
 - Drug schedule: OTC, Schedule G, H, H1, X, or NDPS (narcotic / psychotropic)
-- HSN code and GST rate (0%, 5%, 12% or 18%), reorder level
+- HSN code and GST rate (0%, 5% or 18%; the 12% slab was merged into 5% in the September 2025 GST rate cut), reorder level
 - MRP is printed per batch, so it is stored on the batch; the selling price can't exceed it
 
 ### 3.2 Inventory

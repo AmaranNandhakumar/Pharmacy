@@ -51,4 +51,43 @@ public static class ApiClient
         var staff = await CreateStaffAsync(admin, role);
         return await CreateClientAsAsync(factory, staff.Email, StaffPassword);
     }
+
+    public static string UniqueName(string prefix = "Med") => $"{prefix} {Guid.NewGuid():N}"[..24];
+
+    /// <summary>Creates a medicine (as whoever <paramref name="client"/> is signed in as) and returns it.</summary>
+    public static async Task<MedicineDetailDto> CreateMedicineAsync(HttpClient client, string? name = null,
+        string schedule = "H", decimal gst = 5m, int reorderLevel = 10, string? barcode = null, string? genericName = null)
+    {
+        var response = await client.PostAsJsonAsync("/api/medicines", new
+        {
+            name = name ?? UniqueName(),
+            genericName,
+            strength = "500 mg",
+            form = "Tablet",
+            packSize = "10 tablets",
+            manufacturer = "Test Pharma",
+            barcode,
+            schedule,
+            hsnCode = "3004",
+            gstRatePercent = gst,
+            reorderLevel
+        }, Json);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<MedicineDetailDto>(Json))!;
+    }
+
+    public static Task<HttpResponseMessage> ReceiveAsync(HttpClient client, int medicineId, string batchNumber, int quantity,
+        DateOnly? expiry = null, decimal mrp = 50m, decimal sellingPrice = 45m, decimal purchaseRate = 30m) =>
+        client.PostAsJsonAsync("/api/inventory/receipts", new
+        {
+            medicineId,
+            batchNumber,
+            expiryDate = expiry ?? DateOnly.FromDateTime(DateTime.Today).AddYears(1),
+            mrp,
+            sellingPrice,
+            purchaseRate,
+            quantity,
+            supplierName = "Test Distributor",
+            supplierInvoiceNo = "INV-001"
+        }, Json);
 }

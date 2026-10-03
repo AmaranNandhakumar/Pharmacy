@@ -17,6 +17,18 @@ export const routes: Routes = [
         loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
+        path: 'medicines',
+        loadComponent: () => import('./medicines/medicine-list.component').then(m => m.MedicineListComponent)
+      },
+      {
+        path: 'medicines/:id',
+        loadComponent: () => import('./medicines/medicine-detail.component').then(m => m.MedicineDetailComponent)
+      },
+      {
+        path: 'stock-alerts',
+        loadComponent: () => import('./inventory/stock-alerts.component').then(m => m.StockAlertsComponent)
+      },
+      {
         path: 'users',
         loadComponent: () => import('./users/users.component').then(m => m.UsersComponent),
         canActivate: [roleGuard('Admin')]

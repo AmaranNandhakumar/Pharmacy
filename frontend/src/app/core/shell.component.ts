@@ -40,9 +40,11 @@ interface NavItem {
   `]
 })
 export class ShellComponent {
-  // Later milestones add Medicines, Inventory, Patients, Prescriptions and Sales here
+  // Later milestones add Patients, Prescriptions and Sales here
   private nav: NavItem[] = [
     { label: 'Dashboard', path: '/', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Medicines', path: '/medicines', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Stock alerts', path: '/stock-alerts', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Staff', path: '/users', roles: ['Admin'] }
   ];
 

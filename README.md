@@ -4,8 +4,12 @@ A pharmacy management web app for a retail pharmacy in India (inventory, prescri
 patients, GST billing), built as a self-directed learning project. Plan and design: [`docs/01-design-and-planning.md`](docs/01-design-and-planning.md) ·
 architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
 
-**Current milestone: M0, scaffold & auth.** Staff log in with a role (Admin, Pharmacist,
-Technician); an Admin manages staff accounts. There is no public sign-up.
+**Done so far**
+- **M0, scaffold & auth:** staff log in with a role (Admin, Pharmacist, Technician); an Admin
+  manages staff accounts. There is no public sign-up.
+- **M1, catalogue & inventory:** medicines with Indian drug schedule, HSN code and GST rate;
+  stock received in batches with expiry date and MRP; stock adjustments with a reason; alerts
+  for expired, expiring-soon and low stock.
 
 | Layer    | Technology |
 |----------|------------|
@@ -29,7 +33,9 @@ Pharmacy/
 └── frontend/src/app/
     ├── core/                     # Auth service, guards, interceptor, app shell
     ├── auth/                     # Login page
-    ├── dashboard/
+    ├── dashboard/                # Stock alert tiles
+    ├── medicines/                # Catalogue list, add/edit, batches, receive & adjust stock
+    ├── inventory/                # Stock alerts page
     └── users/                    # Staff management (Admin only)
 ```
 
@@ -80,7 +86,7 @@ cd backend
 dotnet test
 ```
 
-## API (M0)
+## API
 
 | Method | Endpoint | Who |
 |--------|----------|-----|
@@ -91,11 +97,31 @@ dotnet test
 | POST | `/api/users` | Admin |
 | PUT | `/api/users/{id}` | Admin (name, role) |
 | PATCH | `/api/users/{id}/active` | Admin |
+| GET | `/api/medicines?search=&includeInactive=` | Signed in |
+| GET | `/api/medicines/{id}` (with batches) | Signed in |
+| POST / PUT | `/api/medicines`, `/api/medicines/{id}` | Admin, Pharmacist |
+| DELETE | `/api/medicines/{id}` (soft delete) | Admin, Pharmacist |
+| GET | `/api/inventory/batches?medicineId=&includeEmpty=` | Signed in |
+| GET | `/api/inventory/batches/{id}/movements` | Admin, Pharmacist |
+| POST | `/api/inventory/receipts` | Signed in |
+| POST | `/api/inventory/adjustments` | Admin, Pharmacist |
+| GET | `/api/inventory/alerts?expiringWithinDays=90` | Signed in |
 
-User creation, role changes and (de)activation are written to the `AuditLogs` table.
-The last active Admin can't be demoted or deactivated.
+User changes, medicine changes, stock receipts and adjustments are written to the `AuditLogs`
+table. The last active Admin can't be demoted or deactivated.
 
-## Next: M1, catalogue & inventory
+### Stock rules (India)
 
-Medicines CRUD, receiving stock into batches with expiry dates, stock adjustments with a reason,
-and a low-stock / expiring-soon list.
+- GST rate must be 0, 5 or 18% (the 12% slab was merged into 5% in September 2025).
+- HSN code is 4, 6 or 8 digits (medicines are usually 3003 / 3004).
+- Selling price can never be above the batch's printed MRP; prices are GST-inclusive.
+- Expired stock can't be received, and expired batches don't count as sellable.
+- Receiving a batch number that's already on the shelf adds to it only if expiry and MRP match.
+- Stock can never go negative; every change writes a `StockMovements` row.
+- Expiry is entered as month/year, as printed on Indian packs, and stored as the last day of that month.
+
+## Next: M2, patients & prescriptions
+
+Patients with allergies; prescriptions entered with the doctor's registration number, verified
+by a pharmacist, and dispensed from the earliest-expiring batch first (FEFO), with the
+Schedule H1 register filled in automatically.

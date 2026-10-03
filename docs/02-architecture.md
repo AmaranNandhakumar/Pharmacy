@@ -71,7 +71,7 @@ Dependency direction: `Api → Infrastructure → Core`. Core depends on nothing
 User (Id, Email, PasswordHash, FullName, Role[Admin|Pharmacist|Technician], IsActive, CreatedAt)
 
 Medicine (Id, Name, GenericName, Strength, Form, PackSize, Manufacturer, Barcode?,
-          Schedule[Otc|G|H|H1|X|Ndps], HsnCode, GstRatePercent[0|5|12|18],
+          Schedule[Otc|G|H|H1|X|Ndps], HsnCode, GstRatePercent[0|5|18],
           ReorderLevel, IsActive)
   └─< Batch (Id, MedicineId, BatchNumber, ExpiryDate, Mrp, SellingPrice (<= Mrp),
              PurchaseRate, QuantityOnHand, ReceivedAt, SupplierName?, SupplierInvoiceNo?, RowVersion)

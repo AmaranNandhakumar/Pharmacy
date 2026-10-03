@@ -24,3 +24,5 @@ h1, h2 { margin: 0 0 1rem; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: .55rem .5rem; border-bottom: 1px solid var(--border); }
 th { font-size: .8rem; text-transform: uppercase; color: var(--muted); }
+.badge { display: inline-block; font-size: .75rem; border-radius: 999px; padding: .1rem .55rem; background: #e5e7eb; color: var(--text); white-space: nowrap; }
+.badge.rx { background: #fee2e2; color: var(--danger); }
