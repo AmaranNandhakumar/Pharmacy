@@ -29,6 +29,26 @@ export const routes: Routes = [
         loadComponent: () => import('./inventory/stock-alerts.component').then(m => m.StockAlertsComponent)
       },
       {
+        path: 'patients',
+        loadComponent: () => import('./patients/patient-list.component').then(m => m.PatientListComponent)
+      },
+      {
+        path: 'patients/:id',
+        loadComponent: () => import('./patients/patient-detail.component').then(m => m.PatientDetailComponent)
+      },
+      {
+        path: 'prescriptions',
+        loadComponent: () => import('./prescriptions/prescription-list.component').then(m => m.PrescriptionListComponent)
+      },
+      {
+        path: 'prescriptions/new',
+        loadComponent: () => import('./prescriptions/prescription-form.component').then(m => m.PrescriptionFormComponent)
+      },
+      {
+        path: 'prescriptions/:id',
+        loadComponent: () => import('./prescriptions/prescription-detail.component').then(m => m.PrescriptionDetailComponent)
+      },
+      {
         path: 'users',
         loadComponent: () => import('./users/users.component').then(m => m.UsersComponent),
         canActivate: [roleGuard('Admin')]
