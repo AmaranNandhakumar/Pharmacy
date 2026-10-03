@@ -20,6 +20,9 @@ public class PharmacyDbContext : DbContext
     public DbSet<SaleItem> SaleItems => Set<SaleItem>();
     public DbSet<ScheduleRegisterEntry> ScheduleRegister => Set<ScheduleRegisterEntry>();
     public DbSet<PharmacySettings> PharmacySettings => Set<PharmacySettings>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
 
     /// <summary>
     /// Every DateTime is stored in UTC. SQL Server's datetime2 doesn't keep the "kind", so mark values
@@ -192,6 +195,38 @@ public class PharmacyDbContext : DbContext
             e.HasOne(r => r.SaleItem).WithMany().HasForeignKey(r => r.SaleItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<User>().WithMany().HasForeignKey(r => r.PharmacistId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => new { r.Schedule, r.CreatedAt });
+        });
+
+        modelBuilder.Entity<Supplier>(e =>
+        {
+            e.Property(s => s.Name).HasMaxLength(200).IsRequired();
+            e.Property(s => s.ContactPerson).HasMaxLength(100);
+            e.Property(s => s.Phone).HasMaxLength(20);
+            e.Property(s => s.Email).HasMaxLength(256);
+            e.Property(s => s.Address).HasMaxLength(300);
+            e.Property(s => s.Gstin).HasMaxLength(15);
+            e.Property(s => s.DrugLicenceNo).HasMaxLength(100);
+            e.HasIndex(s => s.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<PurchaseOrder>(e =>
+        {
+            e.Property(p => p.PoNumber).HasMaxLength(20).IsRequired();
+            e.HasIndex(p => p.PoNumber).IsUnique();
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.Notes).HasMaxLength(500);
+            e.HasOne(p => p.Supplier).WithMany().HasForeignKey(p => p.SupplierId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(p => p.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(p => p.Status);
+        });
+
+        modelBuilder.Entity<PurchaseOrderLine>(e =>
+        {
+            e.Property(l => l.ExpectedRate).HasPrecision(18, 2);
+            e.Ignore(l => l.QuantityOutstanding);
+            e.HasOne(l => l.PurchaseOrder).WithMany(p => p.Lines).HasForeignKey(l => l.PurchaseOrderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(l => l.Medicine).WithMany().HasForeignKey(l => l.MedicineId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => new { l.PurchaseOrderId, l.MedicineId }).IsUnique();
         });
 
         modelBuilder.Entity<PharmacySettings>(e =>

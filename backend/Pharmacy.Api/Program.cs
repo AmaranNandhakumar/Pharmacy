@@ -98,6 +98,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<StockReceiver>();
 
 // CORS for Angular dev server
 builder.Services.AddCors(options =>

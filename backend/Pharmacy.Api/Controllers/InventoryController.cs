@@ -19,12 +19,14 @@ public class InventoryController : ControllerBase
     private readonly PharmacyDbContext _db;
     private readonly IAuditService _audit;
     private readonly TimeProvider _time;
+    private readonly StockReceiver _receiver;
 
-    public InventoryController(PharmacyDbContext db, IAuditService audit, TimeProvider time)
+    public InventoryController(PharmacyDbContext db, IAuditService audit, TimeProvider time, StockReceiver receiver)
     {
         _db = db;
         _audit = audit;
         _time = time;
+        _receiver = receiver;
     }
 
     private DateOnly Today => DateOnly.FromDateTime(_time.GetLocalNow().DateTime);
@@ -76,46 +78,20 @@ public class InventoryController : ControllerBase
     [HttpPost("receipts")]
     public async Task<ActionResult<BatchDto>> Receive(ReceiveStockDto dto)
     {
-        var medicine = await _db.Medicines.FindAsync(dto.MedicineId);
-        if (medicine is null || !medicine.IsActive)
-            return BadRequest(new { message = "Medicine not found or no longer active." });
-
-        var priceError = StockRules.ValidatePrices(dto.Mrp, dto.SellingPrice, dto.PurchaseRate);
-        if (priceError is not null) return BadRequest(new { message = priceError });
-
-        var expiry = dto.ExpiryDate!.Value;
-        if (expiry <= Today)
-            return BadRequest(new { message = "This batch has already expired and can't be received." });
-
-        var batchNumber = dto.BatchNumber.Trim().ToUpperInvariant();
-        var batch = await _db.Batches.FirstOrDefaultAsync(b => b.MedicineId == medicine.Id && b.BatchNumber == batchNumber);
-
-        if (batch is null)
+        Batch batch;
+        try
         {
-            batch = new Batch
-            {
-                Medicine = medicine,
-                BatchNumber = batchNumber,
-                ExpiryDate = expiry,
-                Mrp = dto.Mrp,
-                SellingPrice = dto.SellingPrice,
-                PurchaseRate = dto.PurchaseRate,
-                SupplierName = dto.SupplierName?.Trim(),
-                SupplierInvoiceNo = dto.SupplierInvoiceNo?.Trim()
-            };
-            _db.Batches.Add(batch);
+            batch = await _receiver.ReceiveAsync(new ReceiptRequest(dto.MedicineId, dto.BatchNumber, dto.ExpiryDate!.Value, dto.Mrp,
+                dto.SellingPrice, dto.PurchaseRate, dto.Quantity, dto.SupplierName, dto.SupplierInvoiceNo, ReferenceId: null), User.GetUserId());
         }
-        else if (batch.ExpiryDate != expiry || batch.Mrp != dto.Mrp)
+        catch (ReceiptException ex)
         {
-            return Conflict(new { message = $"Batch {batchNumber} is already in stock with a different expiry date or MRP. Check the pack." });
+            return ex.IsConflict ? Conflict(new { message = ex.Message }) : BadRequest(new { message = ex.Message });
         }
-
-        StockRules.Apply(batch, dto.Quantity, StockMovementType.Receipt, User.GetUserId(),
-            referenceId: string.IsNullOrWhiteSpace(dto.SupplierInvoiceNo) ? null : dto.SupplierInvoiceNo.Trim());
 
         if (!await TrySave()) return StockChangedConflict();
 
-        _audit.Record("StockReceived", nameof(Batch), batch.Id, new { medicine.Name, batch.BatchNumber, dto.Quantity, dto.SupplierInvoiceNo });
+        _audit.Record("StockReceived", nameof(Batch), batch.Id, new { batch.Medicine.Name, batch.BatchNumber, dto.Quantity, dto.SupplierInvoiceNo });
         await _db.SaveChangesAsync();
 
         return Ok(BatchDto.From(batch, Today));
