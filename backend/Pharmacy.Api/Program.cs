@@ -119,7 +119,8 @@ using (var scope = app.Services.CreateScope())
     var seedPassword = app.Configuration["SeedAdmin:Password"];
     await DbSeeder.SeedAdminAsync(db,
         app.Configuration["SeedAdmin:Email"],
-        string.IsNullOrWhiteSpace(seedPassword) ? null : BCrypt.Net.BCrypt.HashPassword(seedPassword));
+        string.IsNullOrWhiteSpace(seedPassword) ? null : BCrypt.Net.BCrypt.HashPassword(seedPassword),
+        addIfEmailMissing: app.Environment.IsDevelopment());
 }
 
 if (app.Environment.IsDevelopment())
