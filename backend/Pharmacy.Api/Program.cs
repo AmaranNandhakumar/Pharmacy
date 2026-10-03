@@ -59,6 +59,14 @@ builder.Services.AddDbContext<PharmacyDbContext>(options =>
 // JWT Auth
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"];
+if ((string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32) && builder.Environment.IsDevelopment())
+{
+    // Development only: rather than refuse to start, sign tokens with a random key for this run.
+    // Everyone has to log in again after a restart; set Jwt:Key in user-secrets to avoid that.
+    jwtKey = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(48));
+    builder.Configuration["Jwt:Key"] = jwtKey;
+    Console.WriteLine("warn: Jwt:Key not found in user-secrets; using a temporary key for this run.");
+}
 if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
 {
     throw new InvalidOperationException(
