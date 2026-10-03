@@ -16,6 +16,9 @@ architecture: [`docs/02-architecture.md`](docs/02-architecture.md).
 - **M3, point of sale:** a billing counter for shelf (OTC / Schedule G) items and dispensed
   prescriptions on one GST invoice (CGST + SGST, batch, expiry and MRP per line), cash/UPI/card,
   printable A5 invoice, sales history, Admin-only voids, and the Schedule H1 / X register.
+- **M4, reports & audit:** daily sales by payment method, GST summary by rate and HSN (for
+  GSTR-3B / GSTR-1), stock valuation at cost and selling price, expiring stock with money at risk,
+  CSV download for each, and an Admin audit log viewer.
 
 | Layer    | Technology |
 |----------|------------|
@@ -45,6 +48,7 @@ Pharmacy/
     ├── patients/                 # Patient search, add/edit, prescription history
     ├── prescriptions/            # Enter, verify/reject, dispense and refill
     ├── sales/                    # Counter (POS), invoice, sales list, H1 register, settings
+    ├── reports/                  # Reports (CSV export) and audit log
     └── users/                    # Staff management (Admin only)
 ```
 
@@ -137,6 +141,11 @@ configuration: `dotnet test Pharmacy.Tests/Pharmacy.Tests.csproj -c Release`.
 | GET | `/api/sales/billable-fills?patientId=` | Signed in |
 | GET | `/api/sales/register?schedule=H1&from=&to=` | Admin, Pharmacist |
 | GET / PUT | `/api/settings` (invoice header: GSTIN, drug licences) | read: all · edit: Admin |
+| GET | `/api/reports/daily-sales?from=&to=` (default: this month) | Admin, Pharmacist |
+| GET | `/api/reports/gst-summary?from=&to=` | Admin, Pharmacist |
+| GET | `/api/reports/stock-valuation` | Admin, Pharmacist |
+| GET | `/api/reports/expiring?withinDays=90` | Admin, Pharmacist |
+| GET | `/api/audit?entityType=&entityId=&action=&userId=&from=&to=&page=&pageSize=` | Admin |
 
 User changes, medicine changes, stock receipts and adjustments are written to the `AuditLogs`
 table. The last active Admin can't be demoted or deactivated.
@@ -183,6 +192,18 @@ table. The last active Admin can't be demoted or deactivated.
   as obvious placeholders; an Admin fills in the real ones.
 - Prescriptions dispensed before M3 have no fill record, so they can't be billed at the counter.
 
-## Next: M4, reports & audit
+### Report rules
 
-Daily sales, GST summary (for GSTR-1 / GSTR-3B), stock valuation, expiring stock, and an audit log viewer.
+- Sales reports count only completed bills; voided bills are shown as a count, not as money.
+- Days are the pharmacy's local dates (the server's time zone); times are stored in UTC.
+- GST summary: tax by rate (GSTR-3B table 3.1a) and the HSN-wise summary (GSTR-1 table 12).
+  All sales are treated as B2C and intra-state. It's a learning summary for your accountant,
+  not a filing tool.
+- Stock valuation counts unexpired stock at purchase rate and at selling price; expired stock
+  still on the shelf is shown separately, as a loss to write off or return.
+- Ranges are capped at 366 days. Reports are for Admins and Pharmacists; the audit log is Admin only
+  and read-only.
+
+## Next: M5, purchasing (stretch)
+
+Suppliers, purchase orders raised from low stock, and receiving stock against a purchase order.

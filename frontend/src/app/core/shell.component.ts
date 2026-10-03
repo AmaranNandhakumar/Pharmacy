@@ -40,7 +40,6 @@ interface NavItem {
   `]
 })
 export class ShellComponent {
-  // Reports arrive in M4
   private nav: NavItem[] = [
     { label: 'Dashboard', path: '/', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Counter', path: '/pos', roles: ['Admin', 'Pharmacist', 'Technician'] },
@@ -49,7 +48,9 @@ export class ShellComponent {
     { label: 'Patients', path: '/patients', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Medicines', path: '/medicines', roles: ['Admin', 'Pharmacist', 'Technician'] },
     { label: 'Stock alerts', path: '/stock-alerts', roles: ['Admin', 'Pharmacist', 'Technician'] },
+    { label: 'Reports', path: '/reports', roles: ['Admin', 'Pharmacist'] },
     { label: 'H1 register', path: '/register', roles: ['Admin', 'Pharmacist'] },
+    { label: 'Audit log', path: '/audit', roles: ['Admin'] },
     { label: 'Staff', path: '/users', roles: ['Admin'] },
     { label: 'Settings', path: '/settings', roles: ['Admin'] }
   ];
