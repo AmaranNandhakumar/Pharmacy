@@ -326,14 +326,7 @@ public class SalesController : ControllerBase
     private Task<bool> InvoiceNoTaken(string invoiceNo) =>
         _db.Sales.AsNoTracking().AnyAsync(s => s.InvoiceNo == invoiceNo);
 
-    /// <summary>Converts a range of local (pharmacy) dates to [start, end) in UTC, both days inclusive.</summary>
-    private (DateTime start, DateTime end) UtcRange(DateOnly from, DateOnly to)
-    {
-        var zone = _time.LocalTimeZone;
-        var start = TimeZoneInfo.ConvertTimeToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
-        var end = TimeZoneInfo.ConvertTimeToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
-        return (start, end);
-    }
+    private (DateTime start, DateTime end) UtcRange(DateOnly from, DateOnly to) => _time.UtcRange(from, to);
 
     private async Task<SaleDto?> ToDto(int id)
     {
