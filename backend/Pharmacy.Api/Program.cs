@@ -8,6 +8,18 @@ using Pharmacy.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// .NET only reads user-secrets in Development, so starting the API without the launch profile
+// (running the dll, an IDE without launchSettings, dotnet run --no-launch-profile) lost the JWT key.
+// Read them whenever they exist on this machine; environment variables still override them,
+// and the integration tests ("Testing") supply their own settings.
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Configuration.AddUserSecrets<Program>(optional: true);
+    // Re-add these so they keep the highest priority, as in the default setup
+    builder.Configuration.AddEnvironmentVariables();
+    builder.Configuration.AddCommandLine(args);
+}
+
 // Controllers + Swagger (enums as strings to match the Angular client's string unions)
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
